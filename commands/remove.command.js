@@ -1,7 +1,8 @@
-const { SlashCommandBuilder } = require('@discordjs/builders');
-const { PermissionFlagsBits } = require('discord-api-types/v10');
+import { SlashCommandBuilder } from '@discordjs/builders';
+import { PermissionFlagsBits } from 'discord-api-types/v10';
+import { supabase } from '../db.connnect.js';
 
-module.exports = {
+export const remove = {
 	data: new SlashCommandBuilder()
 		.setName('remove')
 		.setDescription('Remove role for user!')
@@ -28,6 +29,10 @@ module.exports = {
 		const user = await interaction.options.getMember('user');
 
 		try {
+			const { data, error } = await supabase
+				.from('temproles')
+				.delete()
+				.match({ user: user.id, role: role.id });
 			user.roles.remove(role);
 		} catch (error) {
 			console.log(error);

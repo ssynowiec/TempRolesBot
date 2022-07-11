@@ -1,28 +1,37 @@
-require('dotenv').config();
+import 'dotenv/config';
 
-const fs = require('node:fs');
-const path = require('node:path');
-const { REST } = require('@discordjs/rest');
-const { Routes } = require('discord-api-types/v9');
+import { REST } from '@discordjs/rest';
+import { Routes } from 'discord-api-types/v9';
 
 const CLIENTID = process.env.CLIENTID;
 const GUILDID = process.env.GUILDID;
 const TOKEN = process.env.TOKEN;
 
-const commands = [];
-const commandsPath = path.join(__dirname, 'commands');
-const commandFiles = fs
-	.readdirSync(commandsPath)
-	.filter(file => file.endsWith('.js'));
+import { give } from './commands/give.command.js';
+import { ping } from './commands/ping.command.js';
+import { refresh } from './commands/refresh.command.js';
+import { remove } from './commands/remove.command.js';
+import { test } from './commands/test.command.js';
+import { help } from './commands/help.command.js';
 
-for (const file of commandFiles) {
-	const filePath = path.join(commandsPath, file);
-	const command = require(filePath);
-	commands.push(command.data.toJSON());
-}
+const commands = [
+	give.data.toJSON(),
+	ping.data.toJSON(),
+	refresh.data.toJSON(),
+	remove.data.toJSON(),
+	help.data.toJSON(),
+];
+
+const betaCommands = [test.data.toJSON()];
 
 const rest = new REST({ version: '9' }).setToken(TOKEN);
 
-rest.put(Routes.applicationGuildCommands(CLIENTID, GUILDID), { body: commands })
+rest.put(Routes.applicationCommands(CLIENTID), { body: commands })
+	.then(() => console.log('Successfully registered application commands.'))
+	.catch(console.error);
+
+rest.put(Routes.applicationGuildCommands(CLIENTID, GUILDID), {
+	body: betaCommands,
+})
 	.then(() => console.log('Successfully registered application commands.'))
 	.catch(console.error);

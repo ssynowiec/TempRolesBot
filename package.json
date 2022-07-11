@@ -3,17 +3,21 @@
 		"@discordjs/builders": "^0.15.0",
 		"@discordjs/rest": "^0.5.0",
 		"@supabase/supabase-js": "^1.35.4",
+		"cron": "^2.0.0",
 		"discord-api-types": "^0.36.1",
 		"discord.js": "^13.8.1",
-		"dotenv": "^16.0.1"
+		"dotenv": "^16.0.1",
+		"minecraft-server-util": "^5.2.10"
 	},
 	"name": "temproles",
 	"version": "1.0.0",
 	"main": "index.js",
+	"type": "module",
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
 		"start": "node index.js",
-		"dev": "nodemon index.js"
+		"dev": "nodemon index.js",
+		"deployCommands": "node deploy-commands.js"
 	},
 	"keywords": [],
 	"author": "ssynowiec.pl <stasyn1410@gmail.com>",

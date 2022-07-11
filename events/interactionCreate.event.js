@@ -1,6 +1,7 @@
-module.exports = {
+import 'dotenv/config';
+
+export const interactionCreate = {
 	name: 'interactionCreate',
-	once: true,
 	async execute(interaction, bot) {
 		if (!interaction.isCommand()) return;
 
@@ -8,8 +9,25 @@ module.exports = {
 
 		if (!command) return;
 
+		if (command.ownerOnly && interaction.member.id !== process.env.OWNERID)
+			return interaction.reply({
+				content:
+					'Nie masz wystarczających uprawnień, aby użyć tej komendy',
+				ephemeral: true,
+			});
+
+		if (
+			command.guildOwnerOnly &&
+			interaction.member.id !== interaction.guild.ownerId
+		)
+			return interaction.reply({
+				content:
+					'Nie masz wystarczających uprawnień, aby użyć tej komendy',
+				ephemeral: true,
+			});
+
 		try {
-			await command.execute(interaction);
+			await command.execute(interaction, bot);
 		} catch (error) {
 			console.error(error);
 			await interaction.reply({
