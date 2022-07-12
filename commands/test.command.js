@@ -1,11 +1,12 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
+import { PermissionFlagsBits } from 'discord-api-types/v10';
 import { supabase } from '../db.connnect.js';
 
 export const test = {
 	data: new SlashCommandBuilder()
 		.setName('test')
-		.setDescription('delete test'),
-	// .setDefaultMemberPermissions('823963428867145788'),
+		.setDescription('delete test')
+		.setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
 	async execute(interaction) {
 		const nowTimeStamp = Date.now();
 

@@ -7,86 +7,36 @@ import { MessageActionRow, MessageButton, MessageEmbed } from 'discord.js';
 export const give = {
 	data: new SlashCommandBuilder()
 		.setName('give')
-		.setDescription('Give temp role for user!')
+		.setDescription('Nadaj rolę czasową użytkownikowi')
 		.addRoleOption(option =>
 			option
 				.setName('rola')
-				.setDescription('choose role to give a user')
+				.setDescription('Wybierz role którą chcesz nadać')
 				.setRequired(true),
 		)
-		.addStringOption(option =>
+		.addIntegerOption(option =>
 			option
 				.setName('time')
-				.setDescription(
-					'choose the time for which the role is to be assigned',
-				)
-				.setRequired(true)
-				.addChoices(
-					{
-						name: '1 minuta',
-						value: '1m',
-					},
-					{
-						name: '2 minut',
-						value: '2m',
-					},
-					{
-						name: '5 minut',
-						value: '5m',
-					},
-					{ name: '1 godzina', value: '1h' },
-					{ name: '30 dni', value: '30d' },
-					{ name: '∞', value: 'perm' },
-				),
+				.setDescription('Podaj czas (w dniach)')
+				.setRequired(true),
 		)
 		.addUserOption(option =>
 			option
 				.setName('user')
-				.setDescription(
-					'select the user to whom you want to assign a role',
-				)
+				.setDescription('Wybierz użytkownika któremu chcesz nadać rolę')
 				.setRequired(true),
 		)
-		.setDefaultMemberPermissions(
-			PermissionFlagsBits.ManageRoles &&
-				PermissionFlagsBits.ModerateMembers,
-		),
+		.setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
 	async execute(interaction, bot) {
 		const role = await interaction.options.getRole('rola');
-		const time = await interaction.options.getString('time');
+		const days = await interaction.options.getInteger('time');
 		const user = await interaction.options.getMember('user');
 		const originalMessage = interaction;
 
+		const dayInMs = 86400000;
 		const nowTimeStamp = Date.now();
-		let endTimeStamp = 0;
-		let humanTime;
-
-		switch (time) {
-			case '1m':
-				endTimeStamp = nowTimeStamp + 60000;
-				humanTime = '1 minutę';
-				break;
-			case '2m':
-				endTimeStamp = nowTimeStamp + 120000;
-				humanTime = '2 minuty';
-				break;
-			case '5m':
-				endTimeStamp = nowTimeStamp + 300000;
-				humanTime = '5 minut';
-				break;
-			case '1h':
-				endTimeStamp = nowTimeStamp + 3600000;
-				humanTime = '1 godzinę';
-				break;
-			case '30d':
-				endTimeStamp = nowTimeStamp + 2592000000;
-				humanTime = '30 dni';
-				break;
-			case 'perm':
-				endTimeStamp = 9999999999;
-				humanTime = 'zawsze';
-				break;
-		}
+		const timeToLeft = days * dayInMs;
+		let endTimeStamp = nowTimeStamp + timeToLeft;
 
 		const tempRoleData = {
 			user: user.id,
@@ -101,8 +51,8 @@ export const give = {
 				.eq('user', tempRoleData.user);
 
 			if (sData.length !== 0) {
-				const oldRole = sData[0].role;
-				if (sData[0].role === tempRoleData.role) {
+				const roleData = sData[0];
+				if (roleData.role === tempRoleData.role) {
 					const buttons = new MessageActionRow()
 						.addComponents(
 							new MessageButton()
@@ -123,7 +73,7 @@ export const give = {
 							'Ten użytkownik ma już przypisaną taką samą rolę. Co chesz teraz zrobić?',
 						)
 						.setDescription(
-							`\`\"Usuń rangę\"\` - powoduje odebranie roli użytkownikowi oraz usunięcie czasu wygaśnięcia\n\`\"Przedłuż rangę\"\` - powoduje ustawienie rangi od tego momentu na ${humanTime}`,
+							`\`\"Usuń rangę\"\` - powoduje odebranie roli użytkownikowi oraz usunięcie czasu wygaśnięcia\n\`\"Przedłuż rangę\"\` - powoduje przedłużenie rangi o podany czas`,
 						)
 						.setFooter({
 							text: 'Wszystkie operacje są nieodwracalne',
@@ -156,14 +106,14 @@ export const give = {
 							'Ten użytkownik ma już przypisaną rolę czasową. Co chesz teraz zrobić?',
 						)
 						.setDescription(
-							`\*\*Ten użytkownik ma już przypisaną rolę czasową <@&${sData[0].role}>. Co chesz teraz zrobić?\*\*\n\`\"Zastąp rangę\"\` - powoduje usunięcie poprzedniej rangi oraz dodanie nowej\n\`\"Dodaj rangę\"\` - powoduje pozostawienie poprzedniej rangi oraz dodanie nowej`,
+							`\*\*Ten użytkownik ma już przypisaną rolę czasową. Co chesz teraz zrobić?\*\*\n\`\"Zastąp rangę\"\` - powoduje usunięcie poprzedniej rangi oraz dodanie nowej\n\`\"Dodaj rangę\"\` - powoduje pozostawienie poprzedniej rangi oraz dodanie nowej`,
 						)
 						.setFooter({
 							text: 'Wszystkie operacje są nieodwracalne',
 						});
 
 					await interaction.reply({
-						content: `Ten użytkownik ma już przypisaną rolę czasową <@&${sData[0].role}>. Co chesz teraz zrobić?`,
+						content: `Ten użytkownik ma już przypisaną rolę czasową. Co chesz teraz zrobić?`,
 						ephemeral: true,
 						embeds: [embed],
 						components: [buttons],
@@ -184,11 +134,14 @@ export const give = {
 					if (!interaction.isButton()) return;
 
 					const deleteRole = async () => {
+						console.log(tempRoleData, Date.now());
 						const { data, error } = await supabase
 							.from('temproles')
 							.delete()
-							.eq('user', tempRoleData.user)
-							.eq('role', tempRoleData.role);
+							.match({
+								user: tempRoleData.user,
+								role: tempRoleData.role,
+							});
 
 						await user.roles.remove(role);
 
@@ -208,7 +161,7 @@ export const give = {
 							.eq('role', tempRoleData.role);
 
 						await originalMessage.editReply({
-							content: `Pomyslnie zmieniono ${role} dla ${user} na ${humanTime}`,
+							content: `Pomyslnie zmieniono ${role} dla ${user} na ${days} dni`,
 							ephemeral: true,
 							embeds: [],
 							components: [],
@@ -225,8 +178,8 @@ export const give = {
 							.eq('user', tempRoleData.user)
 							.eq('role', tempRoleData.role);
 
-						await originalMessage.editReply({
-							content: `Pomyslnie zmieniono rangę <@&${oldRole}> na ${role} dla ${user} na ${humanTime}`,
+						await interaction.reply({
+							content: `Pomyslnie zmieniono rangę na ${role} dla ${user} na ${days} dni`,
 							ephemeral: true,
 							embeds: [],
 							components: [],
@@ -237,14 +190,17 @@ export const give = {
 						const { data, error } = await supabase
 							.from('temproles')
 							.insert([tempRoleData]);
+
 						user.roles.add(role);
 
 						await originalMessage.editReply({
-							content: `Pomyślnie przyznano rangę ${role} dla ${user} na ${humanTime}`,
+							content: `Pomyślnie przyznano rangę ${role} dla ${user} na ${days} dni`,
 							ephemeral: true,
 							embeds: [],
 							components: [],
 						});
+
+						await interaction.deferUpdate();
 					};
 
 					switch (interaction.customId) {
@@ -267,14 +223,15 @@ export const give = {
 				const { data, error } = await supabase
 					.from('temproles')
 					.insert([tempRoleData]);
+
 				user.roles.add(role);
 
 				await interaction.reply({
-					content: `Przyznano rangę ${role} dla ${user} na ${humanTime}`,
+					content: `Przyznano rangę ${role} dla ${user} na ${days} dni`,
 					ephemeral: true,
 				});
 			}
-			deleteRolesWhosEnded(interaction.guild);
+			return deleteRolesWhosEnded(interaction.guild);
 		} catch (error) {
 			console.log(error);
 		}
