@@ -1,17 +1,18 @@
 import { Collection } from 'discord.js';
-import { readdir } from 'node:fs/promises';
-import path from 'node:path';
 
-export const commandHandler = async bot => {
-	const commandsPath = './commands';
-	const commandFiles = await readdir(commandsPath);
+import { give } from '../commands/give.command.js';
+import { ping } from '../commands/ping.command.js';
+import { refresh } from '../commands/refresh.command.js';
+import { remove } from '../commands/remove.command.js';
+import { test } from '../commands/test.command.js';
+import { status } from '../commands/status.command.js';
 
+const commandsArr = [give, ping, refresh, remove, test, status];
+
+export const commandHandler = bot => {
 	bot.commands = new Collection();
 
-	console.log(commandFiles);
-	for (const file of commandFiles) {
-		const filePath = path.join(commandsPath, file);
-		const command = await import(filePath);
+	for (const command of commandsArr) {
 		bot.commands.set(command.data.name, command);
 	}
 };

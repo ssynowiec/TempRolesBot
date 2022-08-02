@@ -53,19 +53,12 @@ export const give = {
 			if (sData.length !== 0) {
 				const roleData = sData[0];
 				if (roleData.role === tempRoleData.role) {
-					const buttons = new MessageActionRow()
-						.addComponents(
-							new MessageButton()
-								.setCustomId('delete')
-								.setLabel('Usuń rangę')
-								.setStyle('DANGER'),
-						)
-						.addComponents(
-							new MessageButton()
-								.setCustomId('extend')
-								.setLabel('Przedłuż rangę')
-								.setStyle('SUCCESS'),
-						);
+					const buttons = new MessageActionRow().addComponents(
+						new MessageButton()
+							.setCustomId('extend')
+							.setLabel('Zmień czas trwania')
+							.setStyle('SUCCESS'),
+					);
 
 					const embed = new MessageEmbed()
 						.setColor()
@@ -73,7 +66,7 @@ export const give = {
 							'Ten użytkownik ma już przypisaną taką samą rolę. Co chesz teraz zrobić?',
 						)
 						.setDescription(
-							`\`\"Usuń rangę\"\` - powoduje odebranie roli użytkownikowi oraz usunięcie czasu wygaśnięcia\n\`\"Przedłuż rangę\"\` - powoduje przedłużenie rangi o podany czas`,
+							`\`\"Zmień czas trwania\"\` - powoduje przedłużenie/zmianę czasu trwania rangi o podany czas (czas trwania rangi to ${days} dni od teraz)`,
 						)
 						.setFooter({
 							text: 'Wszystkie operacje są nieodwracalne',
@@ -86,19 +79,12 @@ export const give = {
 						components: [buttons],
 					});
 				} else {
-					const buttons = new MessageActionRow()
-						.addComponents(
-							new MessageButton()
-								.setCustomId('replace')
-								.setLabel('Zastąp rangę')
-								.setStyle('DANGER'),
-						)
-						.addComponents(
-							new MessageButton()
-								.setCustomId('add')
-								.setLabel('Dodaj rangę')
-								.setStyle('SUCCESS'),
-						);
+					const buttons = new MessageActionRow().addComponents(
+						new MessageButton()
+							.setCustomId('replace')
+							.setLabel('Zastąp rangę')
+							.setStyle('DANGER'),
+					);
 
 					const embed = new MessageEmbed()
 						.setColor()
@@ -106,7 +92,7 @@ export const give = {
 							'Ten użytkownik ma już przypisaną rolę czasową. Co chesz teraz zrobić?',
 						)
 						.setDescription(
-							`\*\*Ten użytkownik ma już przypisaną rolę czasową. Co chesz teraz zrobić?\*\*\n\`\"Zastąp rangę\"\` - powoduje usunięcie poprzedniej rangi oraz dodanie nowej\n\`\"Dodaj rangę\"\` - powoduje pozostawienie poprzedniej rangi oraz dodanie nowej`,
+							`\*\*Ten użytkownik ma już przypisaną rolę czasową. Co chesz teraz zrobić?\*\*\n\`\"Zastąp rangę\"\` - powoduje usunięcie poprzedniej rangi oraz dodanie nowej`,
 						)
 						.setFooter({
 							text: 'Wszystkie operacje są nieodwracalne',
@@ -169,6 +155,11 @@ export const give = {
 					};
 
 					const replaceRole = async () => {
+						const { data: oData, error: oError } = await supabase
+							.from('temproles')
+							.select()
+							.eq('user', tempRoleData.user);
+
 						const { data, error } = await supabase
 							.from('temproles')
 							.update({
@@ -176,9 +167,20 @@ export const give = {
 								endTime: tempRoleData.endTime,
 							})
 							.eq('user', tempRoleData.user)
-							.eq('role', tempRoleData.role);
+							.eq('role', oData[0].role);
 
-						await interaction.reply({
+						const oldRole = interaction.guild.roles.cache.find(
+							r => r.id === oData[0].role,
+						);
+
+						await user.roles.add(role).catch(error => {
+							interaction.reply(
+								`Wystąpił błąd podczas wykonywania tej akcji. \`${error}\``,
+							);
+						});
+						await user.roles.remove(oldRole);
+
+						await originalMessage.editReply({
 							content: `Pomyslnie zmieniono rangę na ${role} dla ${user} na ${days} dni`,
 							ephemeral: true,
 							embeds: [],

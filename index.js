@@ -1,8 +1,7 @@
 import { Client, Intents } from 'discord.js';
 import 'dotenv/config';
-
-import { commandHandler } from './handlers/command.handler.js';
 import { eventHandler } from './handlers/event.handler.js';
+import { commandHandler } from './handlers/command.handler.js';
 
 const TOKEN = process.env.TOKEN;
 
