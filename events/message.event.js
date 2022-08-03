@@ -3,7 +3,11 @@ export const ready = {
 	once: false,
 	async execute(message) {
 		if (message.channel.id === '1004382536555835462') {
-			message.react('🤬', '🚀', '❤');
+			try {
+				await message.react('🤬');
+				await message.react('🚀');
+				await message.react('❤');
+			} catch (error) {}
 		} else {
 			return;
 		}
