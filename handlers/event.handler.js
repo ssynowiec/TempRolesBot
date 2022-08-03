@@ -1,8 +1,9 @@
 import { endTime } from '../events/endTime.event.js';
 import { interactionCreate } from '../events/interactionCreate.event.js';
 import { ready } from '../events/ready.event.js';
+import { message } from '../events/message.event.js';
 
-const events = [endTime, interactionCreate, ready];
+const events = [endTime, interactionCreate, ready, message];
 
 export const eventHandler = bot => {
 	for (const event of events) {
