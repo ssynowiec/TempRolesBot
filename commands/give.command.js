@@ -55,18 +55,18 @@ export const give = {
 				interaction.reply(
 					`Użytkownik ma już przypisaną taką samą rolę`,
 				);
+			} else {
+				const { data, error } = await supabase
+					.from('temproles')
+					.insert([tempRoleData]);
+
+				user.roles.add(role);
+
+				await interaction.reply({
+					content: `Przyznano rangę ${role} dla ${user} na ${days} dni`,
+					ephemeral: true,
+				});
 			}
-
-			const { data, error } = await supabase
-				.from('temproles')
-				.insert([tempRoleData]);
-
-			user.roles.add(role);
-
-			await interaction.reply({
-				content: `Przyznano rangę ${role} dla ${user} na ${days} dni`,
-				ephemeral: true,
-			});
 
 			return deleteRolesWhosEnded(interaction.guild);
 		} catch (error) {
