@@ -48,191 +48,26 @@ export const give = {
 			const { data: sData, error: sError } = await supabase
 				.from('temproles')
 				.select()
-				.eq('user', tempRoleData.user);
+				// .eq('user', tempRoleData.user);
+				.match({ user: tempRoleData.user, role: tempRoleData.role });
 
 			if (sData.length !== 0) {
-				const roleData = sData[0];
-				if (roleData.role === tempRoleData.role) {
-					const buttons = new MessageActionRow().addComponents(
-						new MessageButton()
-							.setCustomId('extend')
-							.setLabel('Zmień czas trwania')
-							.setStyle('SUCCESS'),
-					);
-
-					const embed = new MessageEmbed()
-						.setColor()
-						.setTitle(
-							'Ten użytkownik ma już przypisaną taką samą rolę. Co chesz teraz zrobić?',
-						)
-						.setDescription(
-							`\`\"Zmień czas trwania\"\` - powoduje przedłużenie/zmianę czasu trwania rangi o podany czas (czas trwania rangi to ${days} dni od teraz)`,
-						)
-						.setFooter({
-							text: 'Wszystkie operacje są nieodwracalne',
-						});
-
-					await interaction.reply({
-						content: `Ten użytkownik ma już przypisaną taką samą rolę. Co chesz teraz zrobić?`,
-						ephemeral: true,
-						embeds: [embed],
-						components: [buttons],
-					});
-				} else {
-					const buttons = new MessageActionRow().addComponents(
-						new MessageButton()
-							.setCustomId('replace')
-							.setLabel('Zastąp rangę')
-							.setStyle('DANGER'),
-					);
-
-					const embed = new MessageEmbed()
-						.setColor()
-						.setTitle(
-							'Ten użytkownik ma już przypisaną rolę czasową. Co chesz teraz zrobić?',
-						)
-						.setDescription(
-							`\*\*Ten użytkownik ma już przypisaną rolę czasową. Co chesz teraz zrobić?\*\*\n\`\"Zastąp rangę\"\` - powoduje usunięcie poprzedniej rangi oraz dodanie nowej`,
-						)
-						.setFooter({
-							text: 'Wszystkie operacje są nieodwracalne',
-						});
-
-					await interaction.reply({
-						content: `Ten użytkownik ma już przypisaną rolę czasową. Co chesz teraz zrobić?`,
-						ephemeral: true,
-						embeds: [embed],
-						components: [buttons],
-					});
-				}
-
-				const timeOutToAction = setTimeout(() => {
-					interaction.editReply({
-						content: `Upłynął czas na podjęcie ackji, ranga nie została przyznana`,
-						ephemeral: true,
-						embeds: [],
-						components: [],
-					});
-					return;
-				}, 30000);
-
-				bot.on('interactionCreate', interaction => {
-					if (!interaction.isButton()) return;
-
-					const deleteRole = async () => {
-						console.log(tempRoleData, Date.now());
-						const { data, error } = await supabase
-							.from('temproles')
-							.delete()
-							.match({
-								user: tempRoleData.user,
-								role: tempRoleData.role,
-							});
-
-						await user.roles.remove(role);
-
-						await originalMessage.editReply({
-							content: `Pomyślnie usunięto rangę`,
-							ephemeral: true,
-							embeds: [],
-							components: [],
-						});
-					};
-
-					const extendRole = async () => {
-						const { data, error } = await supabase
-							.from('temproles')
-							.update({ endTime: tempRoleData.endTime })
-							.eq('user', tempRoleData.user)
-							.eq('role', tempRoleData.role);
-
-						await originalMessage.editReply({
-							content: `Pomyslnie zmieniono ${role} dla ${user} na ${days} dni`,
-							ephemeral: true,
-							embeds: [],
-							components: [],
-						});
-					};
-
-					const replaceRole = async () => {
-						const { data: oData, error: oError } = await supabase
-							.from('temproles')
-							.select()
-							.eq('user', tempRoleData.user);
-
-						const { data, error } = await supabase
-							.from('temproles')
-							.update({
-								role: tempRoleData.role,
-								endTime: tempRoleData.endTime,
-							})
-							.eq('user', tempRoleData.user)
-							.eq('role', oData[0].role);
-
-						const oldRole = interaction.guild.roles.cache.find(
-							r => r.id === oData[0].role,
-						);
-
-						await user.roles.add(role).catch(error => {
-							interaction.reply(
-								`Wystąpił błąd podczas wykonywania tej akcji. \`${error}\``,
-							);
-						});
-						await user.roles.remove(oldRole);
-
-						await originalMessage.editReply({
-							content: `Pomyslnie zmieniono rangę na ${role} dla ${user} na ${days} dni`,
-							ephemeral: true,
-							embeds: [],
-							components: [],
-						});
-					};
-
-					const addRole = async () => {
-						const { data, error } = await supabase
-							.from('temproles')
-							.insert([tempRoleData]);
-
-						user.roles.add(role);
-
-						await originalMessage.editReply({
-							content: `Pomyślnie przyznano rangę ${role} dla ${user} na ${days} dni`,
-							ephemeral: true,
-							embeds: [],
-							components: [],
-						});
-
-						await interaction.deferUpdate();
-					};
-
-					switch (interaction.customId) {
-						case 'delete':
-							deleteRole();
-							break;
-						case 'extend':
-							extendRole();
-							break;
-						case 'replace':
-							replaceRole();
-							break;
-						case 'add':
-							addRole();
-							break;
-					}
-					clearTimeout(timeOutToAction);
-				});
-			} else {
-				const { data, error } = await supabase
-					.from('temproles')
-					.insert([tempRoleData]);
-
-				user.roles.add(role);
-
-				await interaction.reply({
-					content: `Przyznano rangę ${role} dla ${user} na ${days} dni`,
-					ephemeral: true,
-				});
+				interaction.reply(
+					`Użytkownik ma już przypisaną taką samą rolę`,
+				);
 			}
+
+			const { data, error } = await supabase
+				.from('temproles')
+				.insert([tempRoleData]);
+
+			user.roles.add(role);
+
+			await interaction.reply({
+				content: `Przyznano rangę ${role} dla ${user} na ${days} dni`,
+				ephemeral: true,
+			});
+
 			return deleteRolesWhosEnded(interaction.guild);
 		} catch (error) {
 			console.log(error);
